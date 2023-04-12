@@ -1,6 +1,7 @@
 package xyz.erichg
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.*
 import android.os.Build
 import android.os.Bundle
@@ -11,14 +12,18 @@ import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.*
+import androidx.core.view.ViewCompat.getWindowInsetsController
+import androidx.core.view.WindowCompat.setDecorFitsSystemWindows
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
 
-    private var density : Int = -1
+
+    private var density : Float = 0f
     private lateinit var gameView : ImageView
     private lateinit var blankBitmap: Bitmap
     private lateinit var canvas: Canvas
@@ -44,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private var hit: Boolean = false
     private var shotsTaken: Int = -1
     private var distanceFromSubInPixels: Int = -1
+    private var distanceFromSubInDP: Int = -1
     private var insets: Rect = Rect()
     private var debugging: Boolean = true
 
@@ -51,7 +57,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
-        WindowCompat.setDecorFitsSystemWindows(window,false)
+        setDecorFitsSystemWindows(window,false)
 
 
 
@@ -59,9 +65,9 @@ class MainActivity : AppCompatActivity() {
         getWindowSize(sizeInPixels)
         numberHorizontalPixels = sizeInPixels.x
         numberVerticalPixels = sizeInPixels.y
-        density = resources.displayMetrics.density.toInt()
-        numberHorizontalDPI = numberHorizontalPixels /density
-        numberVerticalDPI = numberVerticalPixels / density
+        density = resources.displayMetrics.density
+        numberHorizontalDPI = ((numberHorizontalPixels /density) + 0.5 ).toInt()
+        numberVerticalDPI = ((numberVerticalPixels / density) + 0.5).toInt()
         val numBlockHorizontal = 10
         val numBlockVertical = 15
         val blockWidth = numberHorizontalDPI / numBlockHorizontal
@@ -79,6 +85,11 @@ class MainActivity : AppCompatActivity() {
             Bitmap.Config.ARGB_8888)
         canvas = Canvas(blankBitmap)
         gameView = ImageView(this)
+        gameView.layoutParams = ViewGroup.LayoutParams(
+    ViewGroup.LayoutParams.MATCH_PARENT,
+    ViewGroup.LayoutParams.MATCH_PARENT
+)
+
         paint = Paint()
         setContentView(gameView)
 
@@ -93,9 +104,20 @@ class MainActivity : AppCompatActivity() {
         } else {
             // your code for older Android versions
             @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            val controller = getWindowInsetsController(gameView)
+
+// Set the behavior to show transient bars by swipe
+            controller?.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
+// Hide the navigation bar
+            controller?.hide(WindowInsetsCompat.Type.navigationBars())
+
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+            )
         }
 
 
@@ -141,15 +163,11 @@ class MainActivity : AppCompatActivity() {
                 paint)
         }
 
+        //draw shot
+        drawShot()
 
         //score
-        paint.textSize = blockSizeInPixels.toFloat() * .5f
-        paint.color = Color.argb(255,0,0,255)
-        canvas.drawText(
-            "Shots Taken: $shotsTaken Distance: $distanceFromSubInPixels",
-            blockSizeInPixels.toFloat(),blockSizeInPixels * 2f,
-            paint
-        )
+        drawScore()
 
         if (debugging)
         {
@@ -159,9 +177,47 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun drawShot()
+    {
+        val x: Float = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            // device is in portrait mode
+            horizontalTouchedDP
+
+        } else {
+        // device is in landscape mode
+            horizontalTouchedDP
+        }
+        canvas.drawRect(
+            x * blockSizeInPixels,
+            verticalTouchedDP * blockSizeInPixels,
+            (x * blockSizeInPixels) + blockSizeInPixels,
+            (verticalTouchedDP * blockSizeInPixels) + blockSizeInPixels,
+            paint
+        )
+
+    }
     private fun  drawScore()
     {
-        paint.textSize = blockSizeInPixels.toFloat()
+        val score = "Shots Taken: $shotsTaken Distance: ${distanceFromSubInDP.coerceAtLeast(0)}"
+        paint.color = Color.argb(255,0,0,255)
+        val textHeight = blockSizeInPixels.toFloat()
+        val maxWidth = numberHorizontalPixels - blockSizeInPixels
+        var textSize = 100f;
+        paint.textSize = textSize
+        while ( paint.measureText(score)> maxWidth)
+        {
+            textSize -= 5f
+            paint.textSize = textSize
+        }
+        val x = blockSizeInPixels.toFloat()
+
+        canvas.drawText(
+            score,
+            x,
+            textHeight,
+            paint
+        )
+
 
 
     }
@@ -236,6 +292,16 @@ class MainActivity : AppCompatActivity() {
         horizontalTouchedInPixels = (horizontalTouchedDP * blockSizeInDP * density + 0.5).toFloat()
         verticalTouchedInPixels = ( verticalTouchedDP * blockSizeInDP * density + 0.5).toFloat()
 
+        hit = (horizontalTouchedDP.toInt() == subHorizontalPositionDP) &&
+                (verticalTouchedDP.toInt() == subVerticalPositionDP)
+        val horizontalGapDP = (horizontalTouchedDP - subHorizontalPositionDP).toInt()
+        val verticalGap = (verticalTouchedDP - subVerticalPositionDP).toInt()
+
+        //Distance
+        val x = (horizontalGapDP * horizontalGapDP).toFloat() + (verticalGap * verticalGap).toFloat()
+        distanceFromSubInDP = sqrt(x).toInt()
+
+
 
         draw()
 
@@ -245,7 +311,10 @@ class MainActivity : AppCompatActivity() {
             Log.d("In takeShot","horizontalTouchedDP $horizontalTouchedDP verticalTouchedDP $verticalTouchedDP")
             Log.d("In takeShot","horizontalTouchedPixels $horizontalTouchedInPixels" +
             "verticalTouchedPixels $verticalTouchedInPixels")
+            Log.d("hit"," ht: ${horizontalTouchedDP.toInt()} sbh $subHorizontalPositionDP")
+            Log.d("hit"," vt: ${verticalTouchedDP.toInt()} sbh $subVerticalPositionDP")
         }
+
 
 
     }
@@ -261,11 +330,44 @@ class MainActivity : AppCompatActivity() {
     // to the device's screen
     private fun printDebuggingText() {
 
+        paint.textSize = blockSizeInPixels * 0.6f
+
+        canvas.drawText(
+            "numberHorizontalPixels: $numberHorizontalPixels",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 3f, paint )
+        canvas.drawText("numberVerticalPixels: $numberVerticalPixels",
+            blockSizeInPixels.toFloat(), blockSizeInPixels  * 4f, paint )
+
+        canvas.drawText("blockSizeInPixels: $blockSizeInPixels",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 5f, paint )
+
+
+        canvas.drawText("gridWidth: $gridWidthInDP",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 6f, paint )
+
+        canvas.drawText("gridHeight: $gridHeightInDP",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 7f, paint )
+
+        canvas.drawText("horizontalTouched: $horizontalTouchedDP",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 8f, paint )
+
+        canvas.drawText("verticalTouched: $verticalTouchedDP",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 9f, paint )
+
+        canvas.drawText("subHorizontalPosition: $subHorizontalPositionDP",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 10f, paint )
+
+        canvas.drawText("subVerticalPosition: $subVerticalPositionDP",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 11f, paint )
+
+        canvas.drawText("hit: $hit",
+            blockSizeInPixels.toFloat(), blockSizeInPixels * 12f, paint )
+
     }
     private fun newGame() {
 
         subHorizontalPositionDP = Random.nextInt(numberHorizontalDPI/blockSizeInDP)
-        subVerticalPositionDP = Random.nextInt(numberVerticalDPI/blockSizeInDP)
+        subVerticalPositionDP = Random.nextInt(numberVerticalDPI/blockSizeInDP) + 1
         shotsTaken = 0
 
         if(debugging)
