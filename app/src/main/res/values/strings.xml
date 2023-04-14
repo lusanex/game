@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Game</string>
+    <string name="canvasDescription">In this game, the objective is to hunt a hidden submarine by touching the grids on a game board.</string>
+    <string name="title_menu">Select background</string>
+    <string name="background1">Mint</string>
+    <string name="background2">Teal</string>
+    <string name="background3">Blue</string>
+    <string name="background4">Navy</string>
 </resources>
