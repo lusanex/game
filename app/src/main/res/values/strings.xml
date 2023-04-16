@@ -6,4 +6,6 @@
     <string name="background2">Teal</string>
     <string name="background3">Blue</string>
     <string name="background4">Navy</string>
+    <string name="gameOver_text">\"Boom\"</string>
+    <string name="debug">debug</string>
 </resources>

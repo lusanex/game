@@ -17,4 +17,7 @@
     <item android:id="@+id/navy"
         android:title="@string/background4">
     </item>
+    <item android:id="@+id/debug"
+        android:title="@string/debug">
+    </item>
 </menu>

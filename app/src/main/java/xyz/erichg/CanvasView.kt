@@ -1,6 +1,8 @@
 package xyz.erichg
+import android.app.Activity
 import android.content.Context
 import android.graphics.*
+import android.util.AttributeSet
 import android.util.Log
 import android.util.TypedValue
 import android.view.KeyEvent
@@ -16,6 +18,7 @@ import kotlin.random.Random
 
 class CanvasView( context: Context) : View(context){
 
+    private var debugging: Boolean = true
     private lateinit var extraCanvas: Canvas
     private lateinit var extraBitmap: Bitmap
 
@@ -42,19 +45,45 @@ class CanvasView( context: Context) : View(context){
     private var subHorizontalPositionDP: Int = -1
     private var subVerticalPositionDP: Int = -1
     private var hit: Boolean = false
-    private var shotsTaken: Int = 0
+    private var _shotsTaken: Int = 0
     private var distanceFromSubInPixels: Int = -1
     private var distanceFromSubInDP: Int = -1
-    private var debugging: Boolean = true
 
     private var paint: Paint = Paint()
     private var move: Rect = Rect()
     private var previousMove = Rect()
 
 
+    var distance = 0
+    var shotsTaken = 0
 
+    fun setDebug()
+    {
+        debugging = !debugging
+        if(!debugging)
+        {
+            setBackgroundColor(background)
+        }
+        else
+        {
+            invalidate()
+        }
+
+        Log.d("setdebug","$debugging ")
+    }
+    var isContextMenuOpen = false
+    var isContextMenuClosed = false
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+        if(isContextMenuOpen or isContextMenuClosed)
+        {
+            if(isContextMenuClosed)
+            {
+                isContextMenuClosed = false
+            }
+            Log.d("onsizecahnged returnung" ,"$isContextMenuOpen")
+            return
+        }
 
         if(::extraBitmap.isInitialized) extraBitmap.recycle()
 
@@ -105,12 +134,15 @@ class CanvasView( context: Context) : View(context){
 
         if(debugging)
         {
+            Log.d("debugging","printdebiggfunction")
             printDebuggingText()
         }
-        drawScore()
+
         background()
         drawGrid()
         drawShot()
+        drawScore()
+
 
 
 
@@ -122,6 +154,7 @@ class CanvasView( context: Context) : View(context){
         Toast.makeText(context, "Background color changed", Toast.LENGTH_SHORT).show()
         invalidate()
     }
+
     private fun background()
     {
 
@@ -162,6 +195,11 @@ class CanvasView( context: Context) : View(context){
             == MotionEvent.ACTION_UP)
         {
 
+            Log.d("menuopen","$isContextMenuOpen")
+            if(isContextMenuOpen)
+            {
+                return true
+            }
             takeShot(event.x,event.y)
         }
         if(debugging)
@@ -192,7 +230,16 @@ class CanvasView( context: Context) : View(context){
         //Distance
         val x = (horizontalGapDP * horizontalGapDP).toFloat() + (verticalGap * verticalGap).toFloat()
         distanceFromSubInDP = sqrt(x).toInt()
-        invalidate()
+        if(hit)
+        {
+            Log.d("takeShot","call gameOver")
+            gameOver()
+        }
+        else {
+
+            invalidate()
+        }
+
 
 
 
@@ -211,13 +258,34 @@ class CanvasView( context: Context) : View(context){
 
 
     }
+
+    private fun gameOver(){
+
+        val act = context as MainActivity
+        val gameOverFragment = GameOverFragment()
+        val fragmentManager = act.supportFragmentManager
+        val fragmentTransaction = fragmentManager.beginTransaction()
+        fragmentTransaction.replace(R.id.fragment_container,gameOverFragment)
+        fragmentTransaction.addToBackStack(null)
+        fragmentTransaction.commit()
+    }
+
+
+
     private fun  drawScore()
     {
+
+
+        paint.style = Paint.Style.FILL
+        paint.alpha = 255
         paint.color = titleBar
+
+
 
         extraCanvas.drawRect(0f,0f,
             (gridWidthInDP * blockSizeInPixels).toFloat(), blockSizeInPixels.toFloat(),paint)
         val score = "Shots Taken: $shotsTaken Distance: ${distanceFromSubInDP.coerceAtLeast(0)}"
+
 
 
         paint.color = Color.argb(255,0,0,255)
@@ -263,8 +331,8 @@ class CanvasView( context: Context) : View(context){
 
     private fun newGame() {
 
-        subHorizontalPositionDP = Random.nextInt(numberHorizontalDPI/blockSizeInDP) +1
-        subVerticalPositionDP = Random.nextInt(numberVerticalDPI/blockSizeInDP)
+        subHorizontalPositionDP = Random.nextInt(numberHorizontalDPI/blockSizeInDP)
+        subVerticalPositionDP = Random.nextInt(numberVerticalDPI/blockSizeInDP)+1
         shotsTaken = 0
 
         if(debugging)
