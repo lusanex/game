@@ -2,6 +2,9 @@ package xyz.erichg
 import android.app.Activity
 import android.content.Context
 import android.graphics.*
+import android.media.AudioAttributes
+import android.media.SoundPool
+import android.media.SoundPool.Builder
 import android.util.AttributeSet
 import android.util.Log
 import android.util.TypedValue
@@ -56,8 +59,21 @@ class CanvasView( context: Context) : View(context){
 
     var distance = 0
     var shotsTaken = 0
+    private var soundPool: SoundPool? = null
+    private var explosionSoundId = 0
 
-    fun setDebug()
+    init {
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_GAME)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        soundPool = SoundPool.Builder()
+            .setAudioAttributes(attributes).build()
+        explosionSoundId = soundPool?.load(context, R.raw.explosion,1) ?: 0
+
+
+    } fun setDebug()
     {
         debugging = !debugging
         if(!debugging)
@@ -314,6 +330,7 @@ class CanvasView( context: Context) : View(context){
     private fun drawShot()
     {
 
+        soundPool?.play(explosionSoundId, 1f,1f,1,0,1f)
         paint.color = Color.BLACK
         val left = horizontalTouchedDP * blockSizeInPixels
         val top = verticalTouchedDP * blockSizeInPixels
