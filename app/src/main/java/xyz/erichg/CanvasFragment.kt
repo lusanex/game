@@ -1,10 +1,13 @@
 package xyz.erichg
+import android.app.ActionBar
 import android.content.Context
+import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.*
 import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -14,6 +17,7 @@ import androidx.fragment.app.Fragment
 class CanvasFragment (): Fragment()
 {
 
+    private lateinit var explosionAnimation: AnimationDrawable
     private val debugging: Boolean = true
     private var teal : Int = -1
     private var blue : Int= -1
@@ -35,8 +39,17 @@ class CanvasFragment (): Fragment()
         blue = ContextCompat.getColor(ctx,R.color.blue)
         navy = ContextCompat.getColor(ctx,R.color.navy)
         mint = ContextCompat.getColor(ctx,R.color.mint)
-        canvasView = CanvasView(ctx)
+
+
+        val explosionImage = ImageView(context)
+        val layoutParams = ActionBar.LayoutParams(128, 128)
+        explosionImage.layoutParams = layoutParams
+        explosionImage.setBackgroundResource(R.drawable.misile_explosion)
+        explosionAnimation = explosionImage.background as AnimationDrawable
+
+        canvasView = CanvasView(ctx,explosionImage,explosionAnimation)
         (parentView as ViewGroup).addView(canvasView)
+        parentView.addView(explosionImage)
 
         canvasView.contentDescription = getString(R.string.canvasDescription)
 

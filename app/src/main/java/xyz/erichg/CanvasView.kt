@@ -1,19 +1,16 @@
 package xyz.erichg
-import android.app.Activity
+import android.animation.Animator
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
+import android.graphics.drawable.AnimationDrawable
 import android.media.AudioAttributes
 import android.media.SoundPool
-import android.media.SoundPool.Builder
-import android.util.AttributeSet
 import android.util.Log
-import android.util.TypedValue
-import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.Toast
-import android.widget.Toolbar
 import androidx.core.content.res.ResourcesCompat
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -21,10 +18,14 @@ import kotlin.random.Random
 
 class CanvasView( context: Context) : View(context){
 
+
+    private lateinit var valueAnimator: ValueAnimator
     private var debugging: Boolean = true
     private lateinit var extraCanvas: Canvas
     private lateinit var extraBitmap: Bitmap
 
+    private lateinit var explosionAnimation: AnimationDrawable
+    private lateinit var explosionImage : ImageView
     private var background = ResourcesCompat.getColor(resources,R.color.teal_200,null)
     private val titleBar = ResourcesCompat.getColor(resources,R.color.purple_200,null)
 
@@ -61,8 +62,15 @@ class CanvasView( context: Context) : View(context){
     var shotsTaken = 0
     private var soundPool: SoundPool? = null
     private var explosionSoundId = 0
+    private var isShotTrigger = false
 
+
+    constructor(context: Context, spriteImage: ImageView, animation: AnimationDrawable ): this(context)
+    {
+        this.setAnimation(animation,spriteImage)
+    }
     init {
+
         val attributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -73,7 +81,10 @@ class CanvasView( context: Context) : View(context){
         explosionSoundId = soundPool?.load(context, R.raw.explosion,1) ?: 0
 
 
-    } fun setDebug()
+
+
+    }
+    fun setDebug()
     {
         debugging = !debugging
         if(!debugging)
@@ -156,10 +167,9 @@ class CanvasView( context: Context) : View(context){
 
         background()
         drawGrid()
-        drawShot()
         drawScore()
-
-
+        drawShot()
+        //extraCanvas.drawRect( move, paint )
 
 
     }
@@ -216,6 +226,7 @@ class CanvasView( context: Context) : View(context){
             {
                 return true
             }
+
             takeShot(event.x,event.y)
         }
         if(debugging)
@@ -252,7 +263,8 @@ class CanvasView( context: Context) : View(context){
             gameOver()
         }
         else {
-
+            Log.d("isShoorunning", "isshot")
+            isShotTrigger = true
             invalidate()
         }
 
@@ -330,7 +342,6 @@ class CanvasView( context: Context) : View(context){
     private fun drawShot()
     {
 
-        soundPool?.play(explosionSoundId, 1f,1f,1,0,1f)
         paint.color = Color.BLACK
         val left = horizontalTouchedDP * blockSizeInPixels
         val top = verticalTouchedDP * blockSizeInPixels
@@ -342,7 +353,23 @@ class CanvasView( context: Context) : View(context){
         move.set(left.toInt(),top.toInt(),right.toInt(),bottom.toInt())
         previousMove.set(move)
 
-        extraCanvas.drawRect( move, paint )
+
+        explosionImage.x = left
+        explosionImage.y = top
+        if(isShotTrigger)
+        {
+            soundPool?.stop(explosionSoundId)
+            soundPool?.play(explosionSoundId, 1f,1f,1,0,0.5f)
+
+            valueAnimator.cancel()
+            valueAnimator.start()
+        }
+        else if( !valueAnimator.isRunning && isShotTrigger)
+        {
+            soundPool?.play(explosionSoundId, 1f,1f,1,0,0.5f)
+            valueAnimator.cancel()
+            valueAnimator.start()
+        }
 
     }
 
@@ -409,6 +436,44 @@ class CanvasView( context: Context) : View(context){
 
     }
 
+    private fun setAnimation(explosionAnimation: AnimationDrawable, imageView: ImageView) {
+        this.explosionAnimation = explosionAnimation
+        this.explosionImage = imageView
+        var duration = 0
+        for ( i in 0 until explosionAnimation.numberOfFrames)
+        {
+            duration += explosionAnimation.getDuration(i)
+        }
+        valueAnimator = ValueAnimator.ofInt(0, explosionAnimation.numberOfFrames - 1)
+        valueAnimator.duration = (duration).toLong()
+
+
+        valueAnimator.addListener(object : Animator.AnimatorListener {
+            override fun onAnimationStart(p0: Animator) {
+                explosionImage.visibility = VISIBLE
+                explosionAnimation.selectDrawable(0)
+                explosionAnimation.start()
+            }
+
+            override fun onAnimationEnd(p0: Animator) {
+                explosionImage.visibility = INVISIBLE
+                isShotTrigger = false
+
+            }
+
+            override fun onAnimationCancel(p0: Animator) {
+
+                explosionAnimation.selectDrawable(0)
+                explosionAnimation.stop()
+            }
+
+            override fun onAnimationRepeat(p0: Animator) {
+            }
+        })
+
+
+
+    }
 
 
 }
