@@ -2,6 +2,7 @@
 
 ## Attribution
 Explosion sound effect: https://freesound.org/s/268557/
+
 Explosion spritesheet: https://www.spriters-resource.com/snes/goemon3/sheet/11368/
 ### Graphics
 
