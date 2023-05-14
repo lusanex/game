@@ -16,7 +16,11 @@ The goal of the game is to find the submarine by touching squares on the game bo
 Continue touching squares until you find the submarine.
 
 Good luck and happy hunting!
-## Game
+
+##video
+![gameplay](https://youtu.be/05Si_VyIC6Y)
+
+## Screenshoots
 ![alt game](./images/game.png)
 
 ![alt debug](./images/debug.png)
