@@ -18,8 +18,7 @@ Continue touching squares until you find the submarine.
 Good luck and happy hunting!
 
 ## Video
-
-[gameplay](https://youtu.be/05Si_VyIC6Y)
+<iframe width="560" height="315" src="https://www.youtube.com/embed/05Si_VyIC6Y?controls=0&amp;start=3" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 ## Screenshoots
 ![alt game](./images/game.png)
 
