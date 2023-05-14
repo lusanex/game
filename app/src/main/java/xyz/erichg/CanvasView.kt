@@ -20,7 +20,7 @@ class CanvasView( context: Context) : View(context){
 
 
     private lateinit var valueAnimator: ValueAnimator
-    private var debugging: Boolean = true
+    private var debugging: Boolean = false
     private lateinit var extraCanvas: Canvas
     private lateinit var extraBitmap: Bitmap
 
@@ -58,6 +58,8 @@ class CanvasView( context: Context) : View(context){
     private var previousMove = Rect()
 
 
+    private var timerCallback : (() -> Unit)? = null
+
     var distance = 0
     var shotsTaken = 0
     private var soundPool: SoundPool? = null
@@ -84,6 +86,8 @@ class CanvasView( context: Context) : View(context){
 
 
     }
+
+    var isTimeUp: Boolean = false
     fun setDebug()
     {
         debugging = !debugging
@@ -157,6 +161,10 @@ class CanvasView( context: Context) : View(context){
     {
         super.onDraw(canvas)
 
+        if(isTimeUp)
+        {
+            gameOver()
+        }
         canvas.drawBitmap(extraBitmap,0f,0f,null)
 
         if(debugging)
@@ -379,6 +387,8 @@ class CanvasView( context: Context) : View(context){
         subVerticalPositionDP = Random.nextInt(numberVerticalDPI/blockSizeInDP)+1
         shotsTaken = 0
 
+        this.timerCallback?.invoke()
+
         if(debugging)
         {
 
@@ -473,6 +483,11 @@ class CanvasView( context: Context) : View(context){
 
 
 
+    }
+
+    fun setTimer(timerCallback: () -> Unit)
+    {
+        this.timerCallback = timerCallback
     }
 
 
