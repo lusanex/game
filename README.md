@@ -17,5 +17,5 @@ Continue touching squares until you find the submarine.
 
 Good luck and happy hunting!
 ## Game
-![alt game]("./app/images/game.png)
+![alt game](./app/images/game.png)
 
